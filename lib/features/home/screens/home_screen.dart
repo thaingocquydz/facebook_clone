@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double toolBarHeight = 60;
   ScrollController scrollController = ScrollController();
   late final list = <Widget>[
-    NewsFeedScreen(parentScrollController: scrollController),
+    const NewsFeedScreen(),
     const WatchScreen(
       key: Key('watch-screen'),
     ),

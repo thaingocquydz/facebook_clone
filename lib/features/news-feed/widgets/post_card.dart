@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:facebook_clone/constants/global_variables.dart';
 import 'package:facebook_clone/features/comment/screens/comment_screen.dart';
@@ -17,11 +16,14 @@ class PostCard extends StatefulWidget {
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard> {
+class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool postVisible = true;
   List<String> icons = [];
   String reactions = '0';
-  double leftImageHeight = 0;
+  static const double leftImageHeight = 300;
   @override
   void initState() {
     super.initState();
@@ -39,86 +41,52 @@ class _PostCardState extends State<PostCard> {
     for (int i = 0; i < list.length; i++) {
       sum += list[i];
     }
-    setState(() {
-      reactions = '';
-      String tmp = sum.toString();
-      int x = 0;
-      for (int i = tmp.length - 1; i > 0; i--) {
-        x++;
-        reactions = '${tmp[i]}$reactions';
-        if (x == 3) reactions = '.$reactions';
-      }
-      reactions = '${tmp[0]}$reactions';
-      icons = [];
-      if (list[0] == widget.post.like) {
-        icons.add('assets/images/reactions/like.png');
-      } else if (list[0] == widget.post.haha) {
-        icons.add('assets/images/reactions/haha.png');
-      } else if (list[0] == widget.post.love) {
-        icons.add('assets/images/reactions/love.png');
-      } else if (list[0] == widget.post.lovelove) {
-        icons.add('assets/images/reactions/care.png');
-      } else if (list[0] == widget.post.wow) {
-        icons.add('assets/images/reactions/wow.png');
-      } else if (list[0] == widget.post.sad) {
-        icons.add('assets/images/reactions/sad.png');
-      } else if (list[0] == widget.post.angry) {
-        icons.add('assets/images/reactions/angry.png');
-      }
+    reactions = '';
+    String tmp = sum.toString();
+    int x = 0;
+    for (int i = tmp.length - 1; i > 0; i--) {
+      x++;
+      reactions = '${tmp[i]}$reactions';
+      if (x == 3) reactions = '.$reactions';
+    }
+    reactions = '${tmp[0]}$reactions';
+    icons = [];
+    if (list[0] == widget.post.like) {
+      icons.add('assets/images/reactions/like.png');
+    } else if (list[0] == widget.post.haha) {
+      icons.add('assets/images/reactions/haha.png');
+    } else if (list[0] == widget.post.love) {
+      icons.add('assets/images/reactions/love.png');
+    } else if (list[0] == widget.post.lovelove) {
+      icons.add('assets/images/reactions/care.png');
+    } else if (list[0] == widget.post.wow) {
+      icons.add('assets/images/reactions/wow.png');
+    } else if (list[0] == widget.post.sad) {
+      icons.add('assets/images/reactions/sad.png');
+    } else if (list[0] == widget.post.angry) {
+      icons.add('assets/images/reactions/angry.png');
+    }
 
-      if (list[1] == widget.post.like) {
-        icons.add('assets/images/reactions/like.png');
-      } else if (list[1] == widget.post.haha) {
-        icons.add('assets/images/reactions/haha.png');
-      } else if (list[1] == widget.post.love) {
-        icons.add('assets/images/reactions/love.png');
-      } else if (list[1] == widget.post.lovelove) {
-        icons.add('assets/images/reactions/care.png');
-      } else if (list[1] == widget.post.wow) {
-        icons.add('assets/images/reactions/wow.png');
-      } else if (list[1] == widget.post.sad) {
-        icons.add('assets/images/reactions/sad.png');
-      } else if (list[1] == widget.post.angry) {
-        icons.add('assets/images/reactions/angry.png');
-      }
-    });
-    _calculateImageDimension();
-  }
-
-  _calculateImageDimension() async {
-    Completer<Size> completer = Completer();
-    Image image = Image.asset(widget.post.image![0]);
-    image.image.resolve(const ImageConfiguration()).addListener(
-      ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {
-          var myImage = image.image;
-          Size size = Size(myImage.width.toDouble(), myImage.height.toDouble());
-          completer.complete(size);
-        },
-      ),
-    );
-    await completer.future.then((value) {
-      setState(() {
-        if (widget.post.image!.length > 2 && widget.post.image!.length < 5) {
-          leftImageHeight = MediaQuery.of(context).size.width *
-              2 /
-              3 *
-              0.99 *
-              value.height /
-              value.width;
-        } else {
-          leftImageHeight = MediaQuery.of(context).size.width /
-              2 *
-              0.99 *
-              value.height /
-              value.width;
-        }
-      });
-    });
+    if (list[1] == widget.post.like) {
+      icons.add('assets/images/reactions/like.png');
+    } else if (list[1] == widget.post.haha) {
+      icons.add('assets/images/reactions/haha.png');
+    } else if (list[1] == widget.post.love) {
+      icons.add('assets/images/reactions/love.png');
+    } else if (list[1] == widget.post.lovelove) {
+      icons.add('assets/images/reactions/care.png');
+    } else if (list[1] == widget.post.wow) {
+      icons.add('assets/images/reactions/wow.png');
+    } else if (list[1] == widget.post.sad) {
+      icons.add('assets/images/reactions/sad.png');
+    } else if (list[1] == widget.post.angry) {
+      icons.add('assets/images/reactions/angry.png');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return postVisible
         ? Column(
             children: [
@@ -1076,7 +1044,7 @@ class _PostCardState extends State<PostCard> {
                                                         width: double.infinity,
                                                         height: double.infinity,
                                                         color: Colors.black
-                                                            .withOpacity(0.3),
+                                                            .withValues(alpha: 0.3),
                                                         child: Text(
                                                           '+${widget.post.image!.length - i - 1}',
                                                           style:
@@ -1344,8 +1312,7 @@ class _PostCardState extends State<PostCard> {
                                                             height:
                                                                 double.infinity,
                                                             color: Colors.black
-                                                                .withOpacity(
-                                                                    0.3),
+                                                                .withValues(alpha: 0.3),
                                                             child: Text(
                                                               '+${widget.post.image!.length - i - 1}',
                                                               style:
@@ -1373,7 +1340,7 @@ class _PostCardState extends State<PostCard> {
                               : Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(20),
-                                  color: Colors.grey.withOpacity(0.5),
+                                  color: Colors.grey.withValues(alpha: 0.5),
                                   child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -1558,8 +1525,7 @@ class _PostCardState extends State<PostCard> {
                                                                         .infinity,
                                                                     color: Colors
                                                                         .black
-                                                                        .withOpacity(
-                                                                            0.3),
+                                                                        .withValues(alpha: 0.3),
                                                                     child: Text(
                                                                       '+${widget.post.image!.length - i - 1}',
                                                                       style:

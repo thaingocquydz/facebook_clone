@@ -9,9 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class NewsFeedScreen extends StatefulWidget {
-  static double offset = 0;
-  final ScrollController parentScrollController;
-  const NewsFeedScreen({super.key, required this.parentScrollController});
+  const NewsFeedScreen({super.key});
 
   @override
   State<NewsFeedScreen> createState() => _NewsFeedScreenState();
@@ -665,155 +663,121 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
     ),
   ];
 
-  ScrollController scrollController =
-      ScrollController(initialScrollOffset: NewsFeedScreen.offset);
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    scrollController.dispose();
-    super.dispose();
+  Widget _buildHeader(BuildContext context, User user) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: CircleAvatar(
+                  backgroundImage: AssetImage(user.avatar),
+                  radius: 20,
+                ),
+              ),
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    setState(() {
+                      colorNewPost = Colors.transparent;
+                    });
+                  },
+                  onTapUp: (tapUpDetails) {
+                    setState(() {
+                      colorNewPost = Colors.black12;
+                    });
+                  },
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.rectangle,
+                      border: Border.all(
+                        color: Colors.black12,
+                        style: BorderStyle.solid,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      color: colorNewPost,
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      child: Text('Bạn đang nghĩ gì?'),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                splashRadius: 20,
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.image,
+                  color: Colors.green,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(width: double.infinity, height: 5, color: Colors.black26),
+        const SizedBox(height: 10),
+        Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 5),
+                  child: AddStoryCard(),
+                ),
+                ...stories
+                    .map((e) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          child: StoryCard(story: e),
+                        ))
+                    ,
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(width: double.infinity, height: 5, color: Colors.black26),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final User user = Provider.of<UserProvider>(context).user;
-    scrollController.addListener(() {
-      if (widget.parentScrollController.hasClients) {
-        widget.parentScrollController.jumpTo(
-            widget.parentScrollController.offset +
-                scrollController.offset -
-                NewsFeedScreen.offset);
-        NewsFeedScreen.offset = scrollController.offset;
-      }
-    });
-    return SingleChildScrollView(
-      controller: scrollController,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    right: 10,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: _buildHeader(context, user)),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, i) => RepaintBoundary(
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  PostCard(post: posts[i]),
+                  Container(
+                    width: double.infinity,
+                    height: 5,
+                    color: Colors.black26,
                   ),
-                  child: CircleAvatar(
-                    backgroundImage: AssetImage(user.avatar),
-                    radius: 20,
-                  ),
-                ),
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      setState(() {
-                        colorNewPost = Colors.transparent;
-                      });
-                    },
-                    onTapUp: (tapUpDetails) {
-                      setState(() {
-                        colorNewPost = Colors.black12;
-                      });
-                    },
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.rectangle,
-                        border: Border.all(
-                          color: Colors.black12,
-                          style: BorderStyle.solid,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        color: colorNewPost,
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        child: Text('Bạn đang nghĩ gì?'),
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  splashRadius: 20,
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.image,
-                    color: Colors.green,
-                    size: 20,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+            childCount: posts.length,
           ),
-          Container(
-            width: double.infinity,
-            height: 5,
-            color: Colors.black26,
-          ),
-          const SizedBox(
-            height: 10,
-          ),
-          Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 5,
-                  ),
-                  child: AddStoryCard(),
-                ),
-                ...stories
-                    .map((e) => Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                          ),
-                          child: StoryCard(story: e),
-                        ))
-                    .toList()
-              ]),
-            ),
-          ),
-          const SizedBox(
-            height: 10,
-          ),
-          Container(
-            width: double.infinity,
-            height: 5,
-            color: Colors.black26,
-          ),
-          Column(
-            children: posts
-                .map((e) => Column(
-                      children: [
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        PostCard(post: e),
-                        Container(
-                          width: double.infinity,
-                          height: 5,
-                          color: Colors.black26,
-                        ),
-                      ],
-                    ))
-                .toList(),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
