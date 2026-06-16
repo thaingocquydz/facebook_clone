@@ -1,3 +1,7 @@
+import 'package:facebook_clone/features/auth/screens/login_screen.dart';
+import 'package:facebook_clone/features/messages/screens/chat_screen.dart';
+import 'package:facebook_clone/features/messages/screens/messages_screen.dart';
+import 'package:facebook_clone/features/auth/screens/register_screen.dart';
 import 'package:facebook_clone/features/comment/screens/comment_screen.dart';
 import 'package:facebook_clone/features/friends/screens/friends_screen.dart';
 import 'package:facebook_clone/features/friends/screens/friends_search_screen.dart';
@@ -17,6 +21,14 @@ import 'package:flutter/material.dart';
 
 Route<dynamic> generateRoute(RouteSettings routeSettings) {
   switch (routeSettings.name) {
+    case LoginScreen.routeName:
+      return MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      );
+    case RegisterScreen.routeName:
+      return MaterialPageRoute(
+        builder: (context) => const RegisterScreen(),
+      );
     case HomeScreen.routeName:
       return MaterialPageRoute(
         builder: (context) => const HomeScreen(),
@@ -191,6 +203,39 @@ Route<dynamic> generateRoute(RouteSettings routeSettings) {
           var tween =
               Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      );
+    case MessagesScreen.routeName:
+      return PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const MessagesScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+          final tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      );
+    case ChatScreen.routeName:
+      return PageRouteBuilder(
+        settings: routeSettings,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const ChatScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+          final tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
           return SlideTransition(
             position: animation.drive(tween),
             child: child,

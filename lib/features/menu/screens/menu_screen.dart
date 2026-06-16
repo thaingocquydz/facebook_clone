@@ -1,3 +1,4 @@
+import 'package:facebook_clone/features/auth/screens/login_screen.dart';
 import 'package:facebook_clone/features/friends/screens/friends_screen.dart';
 import 'package:facebook_clone/features/memory/screens/memory_screen.dart';
 import 'package:facebook_clone/features/menu/widgets/menu_choice.dart';
@@ -21,7 +22,7 @@ class _MenuScreenState extends State<MenuScreen> {
   ScrollController scrollController =
       ScrollController(initialScrollOffset: MenuScreen.offset);
   ScrollController headerScrollController = ScrollController();
-  User user = User(name: 'Lê Công Đắt', avatar: 'assets/images/user/lcd.jpg');
+  User user = User(name: 'TNQuys', avatar: 'assets/images/user/lcd.jpg');
   User secondUser =
       User(name: 'Leo Messi', avatar: 'assets/images/user/messi.jpg');
   final List<Widget> shortcuts = [
@@ -1746,7 +1747,13 @@ class _MenuScreenState extends State<MenuScreen> {
                             width: 0.5,
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            LoginScreen.routeName,
+                            (route) => false,
+                          );
+                        },
                         child: const Text(
                           'Đăng xuất',
                           style: TextStyle(

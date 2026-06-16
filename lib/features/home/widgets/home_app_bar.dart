@@ -1,4 +1,5 @@
 import 'package:facebook_clone/constants/global_variables.dart';
+import 'package:facebook_clone/features/messages/screens/messages_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeAppBar extends StatefulWidget {
@@ -74,7 +75,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
               child: IconButton(
                 splashRadius: 18,
                 padding: const EdgeInsets.all(0),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushNamed(context, MessagesScreen.routeName);
+                },
                 icon: const ImageIcon(
                   AssetImage('assets/images/message.png'),
                   size: 23,

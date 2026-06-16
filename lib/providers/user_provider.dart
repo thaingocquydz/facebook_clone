@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 class UserProvider extends ChangeNotifier {
   final User _user = User(
-    name: 'Lê Công Đắt',
+    name: 'TNQuys',
     avatar: 'assets/images/user/lcd.jpg',
     educations: [
       Education(
@@ -38,7 +38,7 @@ class UserProvider extends ChangeNotifier {
     stories: [
       Story(
         user: User(
-          name: 'Lê Công Đắt',
+          name: 'TNQuys',
           avatar: 'assets/images/user/lcd.jpg',
         ),
         image: ['assets/images/story/3.jpg'],
@@ -48,7 +48,7 @@ class UserProvider extends ChangeNotifier {
       ),
       Story(
         user: User(
-          name: 'Lê Công Đắt',
+          name: 'TNQuys',
           avatar: 'assets/images/user/lcd.jpg',
         ),
         image: [
@@ -64,7 +64,7 @@ class UserProvider extends ChangeNotifier {
       ),
       Story(
         user: User(
-          name: 'Lê Công Đắt',
+          name: 'TNQuys',
           avatar: 'assets/images/user/lcd.jpg',
         ),
         video: ['assets/videos/3.mp4'],
@@ -105,7 +105,7 @@ class UserProvider extends ChangeNotifier {
     posts: [
       Post(
         user: User(
-          name: 'Lê Công Đắt',
+          name: 'TNQuys',
           avatar: 'assets/images/user/lcd.jpg',
         ),
         time: '3 phút',
@@ -120,7 +120,7 @@ class UserProvider extends ChangeNotifier {
       ),
       Post(
         user: User(
-          name: 'Lê Công Đắt',
+          name: 'TNQuys',
           avatar: 'assets/images/user/lcd.jpg',
         ),
         time: '3 phút',
@@ -147,7 +147,7 @@ class UserProvider extends ChangeNotifier {
       ),
       Post(
         user: User(
-          name: 'Lê Công Đắt',
+          name: 'TNQuys',
           avatar: 'assets/images/user/lcd.jpg',
         ),
         time: '3 phút',
