@@ -1,5 +1,10 @@
 import 'dart:async';
 
+import 'package:facebook_clone/features/call/cubit/call_cubit.dart';
+import 'package:facebook_clone/features/call/cubit/call_state.dart';
+import 'package:facebook_clone/features/call/models/call_models.dart';
+import 'package:facebook_clone/features/call/screens/call_screen.dart';
+import 'package:facebook_clone/features/call/screens/incoming_call_screen.dart';
 import 'package:facebook_clone/features/messages/cubit/message_cubit.dart';
 import 'package:facebook_clone/features/messages/cubit/message_state.dart';
 import 'package:facebook_clone/features/messages/models/conversation.dart';
@@ -60,11 +65,18 @@ class ChatScreen extends StatelessWidget {
     final args =
         ModalRoute.of(context)!.settings.arguments as ChatScreenArgs;
 
-    return BlocProvider(
-      create: (_) => MessageCubit(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => MessageCubit(
             MessageRepository(),
             currentUserId: args.currentUserId,
           )..loadMessages(args.conversation.id),
+        ),
+        BlocProvider(
+          create: (_) => CallCubit(currentUserId: args.currentUserId),
+        ),
+      ],
       child: _ChatView(
         conversation: args.conversation,
         currentUserId: args.currentUserId,
@@ -187,12 +199,44 @@ class _ChatViewState extends State<_ChatView> {
 
   bool _isMe(String senderId) => widget.currentUserId == senderId;
 
+  void _navigateToCall(BuildContext context) {
+    final cubit = context.read<CallCubit>();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: const CallScreen(),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToIncoming(BuildContext context) {
+    final cubit = context.read<CallCubit>();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: const IncomingCallScreen(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final conv = widget.conversation;
     final isGroup = conv.type == 'GROUP';
 
-    return Scaffold(
+    return BlocListener<CallCubit, CallState>(
+      listener: (context, state) {
+        if (state is CallIncoming) {
+          _navigateToIncoming(context);
+        } else if (state is CallOutgoing) {
+          _navigateToCall(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -276,11 +320,19 @@ class _ChatViewState extends State<_ChatView> {
         actions: [
           _AppBarIcon(
             icon: Icons.phone_outlined,
-            onTap: () {},
+            onTap: () => context.read<CallCubit>().initiateCall(
+                  conversationId: conv.id,
+                  callType: CallType.audio,
+                  calleeName: conv.name,
+                ),
           ),
           _AppBarIcon(
             icon: Icons.videocam_outlined,
-            onTap: () {},
+            onTap: () => context.read<CallCubit>().initiateCall(
+                  conversationId: conv.id,
+                  callType: CallType.video,
+                  calleeName: conv.name,
+                ),
           ),
           _AppBarIcon(
             icon: Icons.info_outline,
@@ -412,6 +464,7 @@ class _ChatViewState extends State<_ChatView> {
             onSend: _sendMessage,
           ),
         ],
+      ),
       ),
     );
   }
