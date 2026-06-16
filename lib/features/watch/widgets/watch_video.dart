@@ -125,7 +125,7 @@ class _WatchVideoState extends State<WatchVideo> {
   Widget build(BuildContext context) {
     return Container(
       color: widget.isDarkMode == true
-          ? Colors.black.withOpacity(0.85)
+          ? Colors.black.withValues(alpha: 0.85)
           : Colors.white,
       padding: const EdgeInsets.only(
         top: 10,
@@ -175,51 +175,48 @@ class _WatchVideoState extends State<WatchVideo> {
                               ],
                             ),
                           ),
-                          SizedBox(
-                            width: 115,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  widget.post.time,
-                                  style: TextStyle(
-                                    color: widget.isDarkMode == true
-                                        ? Colors.white.withOpacity(0.5)
-                                        : Colors.black54,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 2,
-                                    left: 5,
-                                    right: 5,
-                                  ),
-                                  child: Icon(
-                                    Icons.circle,
-                                    size: 2,
-                                    color: widget.isDarkMode == true
-                                        ? Colors.white.withOpacity(0.5)
-                                        : Colors.black54,
-                                  ),
-                                ),
-                                Icon(
-                                  widget.post.shareWith == 'public'
-                                      ? Icons.public
-                                      : widget.post.shareWith == 'friends'
-                                          ? Icons.people
-                                          : widget.post.shareWith ==
-                                                  'friends-of-frends'
-                                              ? Icons.groups
-                                              : Icons.lock,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                widget.post.time,
+                                style: TextStyle(
                                   color: widget.isDarkMode == true
-                                      ? Colors.white.withOpacity(0.5)
+                                      ? Colors.white.withValues(alpha: 0.5)
                                       : Colors.black54,
-                                  size: 14,
+                                  fontSize: 13,
                                 ),
-                              ],
-                            ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 2,
+                                  left: 5,
+                                  right: 5,
+                                ),
+                                child: Icon(
+                                  Icons.circle,
+                                  size: 2,
+                                  color: widget.isDarkMode == true
+                                      ? Colors.white.withValues(alpha: 0.5)
+                                      : Colors.black54,
+                                ),
+                              ),
+                              Icon(
+                                widget.post.shareWith == 'public'
+                                    ? Icons.public
+                                    : widget.post.shareWith == 'friends'
+                                        ? Icons.people
+                                        : widget.post.shareWith ==
+                                                'friends-of-frends'
+                                            ? Icons.groups
+                                            : Icons.lock,
+                                color: widget.isDarkMode == true
+                                    ? Colors.white.withValues(alpha: 0.5)
+                                    : Colors.black54,
+                                size: 14,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -380,7 +377,7 @@ class _WatchVideoState extends State<WatchVideo> {
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: widget.isDarkMode == true
-                                        ? Colors.black.withOpacity(0.85)
+                                        ? Colors.black.withValues(alpha: 0.85)
                                         : Colors.white,
                                     width: 2,
                                   )),

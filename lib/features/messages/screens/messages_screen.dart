@@ -301,7 +301,7 @@ class _ConversationTile extends StatelessWidget {
                           hasUnread ? FontWeight.bold : FontWeight.w500,
                       color: Colors.black,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (subtitle.isNotEmpty) ...[

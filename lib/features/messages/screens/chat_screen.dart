@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:facebook_clone/features/messages/cubit/message_cubit.dart';
 import 'package:facebook_clone/features/messages/cubit/message_state.dart';
 import 'package:facebook_clone/features/messages/models/conversation.dart';
 import 'package:facebook_clone/features/messages/models/message.dart';
 import 'package:facebook_clone/features/messages/repository/message_repository.dart';
+import 'package:facebook_clone/services/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -58,8 +61,10 @@ class ChatScreen extends StatelessWidget {
         ModalRoute.of(context)!.settings.arguments as ChatScreenArgs;
 
     return BlocProvider(
-      create: (_) => MessageCubit(MessageRepository())
-        ..loadMessages(args.conversation.id),
+      create: (_) => MessageCubit(
+            MessageRepository(),
+            currentUserId: args.currentUserId,
+          )..loadMessages(args.conversation.id),
       child: _ChatView(
         conversation: args.conversation,
         currentUserId: args.currentUserId,
@@ -85,21 +90,86 @@ class _ChatViewState extends State<_ChatView> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _hasText = false;
+  ConversationMember? _typingMember;
+  bool _isTyping = false;
+
+  StreamSubscription<TypingEvent>? _typingSub;
+  Timer? _typingDebounce;
 
   @override
   void initState() {
     super.initState();
-    _inputController.addListener(() {
-      final hasText = _inputController.text.trim().isNotEmpty;
-      if (hasText != _hasText) setState(() => _hasText = hasText);
-    });
+    _inputController.addListener(_onTextChanged);
+    _typingSub = ChatService().onTyping.listen(_onTypingEvent);
   }
 
   @override
   void dispose() {
+    _typingSub?.cancel();
+    _typingDebounce?.cancel();
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onTypingEvent(TypingEvent event) {
+    if (event.conversationId != widget.conversation.id) return;
+    final myId = widget.currentUserId;
+    if (myId != null && event.userId == myId) return;
+    if (!mounted) return;
+    setState(() {
+      if (event.typing) {
+        final matches = widget.conversation.members
+            .where((m) => m.userId == event.userId);
+        _typingMember = matches.isNotEmpty ? matches.first : null;
+      } else {
+        _typingMember = null;
+      }
+    });
+  }
+
+  void _onTextChanged() {
+    if (!mounted) return;
+    final hasText = _inputController.text.trim().isNotEmpty;
+    if (hasText != _hasText) setState(() => _hasText = hasText);
+
+    if (hasText) {
+      if (!_isTyping) {
+        _isTyping = true;
+        context.read<MessageCubit>().sendTyping(
+          conversationId: widget.conversation.id,
+          typing: true,
+        );
+      }
+      _typingDebounce?.cancel();
+      _typingDebounce = Timer(const Duration(seconds: 3), _stopTyping);
+    } else {
+      _stopTyping();
+    }
+  }
+
+  void _stopTyping() {
+    _typingDebounce?.cancel();
+    if (_isTyping) {
+      _isTyping = false;
+      if (mounted) {
+        context.read<MessageCubit>().sendTyping(
+          conversationId: widget.conversation.id,
+          typing: false,
+        );
+      }
+    }
+  }
+
+  void _sendMessage() {
+    final text = _inputController.text.trim();
+    if (text.isEmpty) return;
+    _inputController.clear();
+    _stopTyping();
+    context.read<MessageCubit>().sendMessage(
+      conversationId: widget.conversation.id,
+      content: text,
+    );
   }
 
   void _scrollToBottom() {
@@ -173,31 +243,33 @@ class _ChatViewState extends State<_ChatView> {
               ],
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  conv.name,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    conv.name,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  _isOnline() ? 'Đang hoạt động' : 'Không hoạt động',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _isOnline()
-                        ? const Color(0xFF31A24C)
-                        : Colors.grey[500],
-                    fontWeight: FontWeight.normal,
+                  Text(
+                    _isOnline() ? 'Đang hoạt động' : 'Không hoạt động',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _isOnline()
+                          ? const Color(0xFF31A24C)
+                          : Colors.grey[500],
+                      fontWeight: FontWeight.normal,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -222,7 +294,18 @@ class _ChatViewState extends State<_ChatView> {
           Expanded(
             child: BlocConsumer<MessageCubit, MessageState>(
               listener: (context, state) {
-                if (state is MessageLoaded) _scrollToBottom();
+                if (state is MessageLoaded) {
+                  _scrollToBottom();
+                  final last = state.messages.isNotEmpty
+                      ? state.messages.last
+                      : null;
+                  if (last != null && !last.id.startsWith('temp_')) {
+                    context.read<MessageCubit>().sendRead(
+                      conversationId: conv.id,
+                      lastReadMessageId: last.id,
+                    );
+                  }
+                }
               },
               builder: (context, state) {
                 if (state is MessageLoading) {
@@ -293,7 +376,6 @@ class _ChatViewState extends State<_ChatView> {
                           !_isSameDay(prevMsg.sentAt, msg.sentAt);
 
                       final isMe = _isMe(msg.senderId);
-                      // Show avatar if last in a group of same sender
                       final isLastInGroup = nextMsg == null ||
                           nextMsg.senderId != msg.senderId;
                       final isFirstInGroup = prevMsg == null ||
@@ -323,13 +405,11 @@ class _ChatViewState extends State<_ChatView> {
               },
             ),
           ),
+          if (_typingMember != null) _TypingIndicator(member: _typingMember!),
           _BottomInputBar(
             controller: _inputController,
             hasText: _hasText,
-            onSend: () {
-              // TODO: hook up send message API
-              _inputController.clear();
-            },
+            onSend: _sendMessage,
           ),
         ],
       ),
@@ -338,6 +418,111 @@ class _ChatViewState extends State<_ChatView> {
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+// ─────────────────────────────────────────────
+// Typing indicator
+// ─────────────────────────────────────────────
+class _TypingIndicator extends StatefulWidget {
+  final ConversationMember member;
+
+  const _TypingIndicator({required this.member});
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  double _dotOffset(int index) {
+    final phase = (_ctrl.value + index / 3.0) % 1.0;
+    final t = phase < 0.5
+        ? Curves.easeInOut.transform(phase * 2)
+        : Curves.easeInOut.transform((1.0 - phase) * 2);
+    return -t * 6;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final member = widget.member;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8, bottom: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: const Color(0xFF0084FF),
+              backgroundImage: member.avatarUrl != null
+                  ? NetworkImage(member.avatarUrl!)
+                  : null,
+              child: member.avatarUrl == null
+                  ? Text(
+                      member.displayName.isNotEmpty
+                          ? member.displayName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F2F5),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, _) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(
+                    3,
+                    (i) => Transform.translate(
+                      offset: Offset(0, _dotOffset(i)),
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF8E8E8E),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -433,7 +618,6 @@ class _MessageBubble extends StatelessWidget {
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Avatar placeholder for non-me messages (keeps alignment)
           if (!isMe) ...[
             SizedBox(
               width: 32,
@@ -463,7 +647,6 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 6),
           ],
 
-          // Bubble column
           Flexible(
             child: Column(
               crossAxisAlignment: isMe
@@ -482,6 +665,8 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (message.replyTo != null)
+                  _ReplyPreview(reply: message.replyTo!, isMe: isMe),
                 Tooltip(
                   message: timeStr,
                   preferBelow: false,
@@ -497,10 +682,17 @@ class _MessageBubble extends StatelessWidget {
                       borderRadius: _bubbleRadius(),
                     ),
                     child: Text(
-                      message.content,
+                      message.deleted ? 'Tin nhắn đã bị thu hồi' : message.content,
                       style: TextStyle(
-                        color: textColor,
+                        color: message.deleted
+                            ? (isMe
+                                ? Colors.white70
+                                : Colors.grey)
+                            : textColor,
                         fontSize: 15,
+                        fontStyle: message.deleted
+                            ? FontStyle.italic
+                            : FontStyle.normal,
                       ),
                     ),
                   ),
@@ -510,6 +702,59 @@ class _MessageBubble extends StatelessWidget {
           ),
 
           if (isMe) const SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Reply preview inside bubble
+// ─────────────────────────────────────────────
+class _ReplyPreview extends StatelessWidget {
+  final ReplyToMessage reply;
+  final bool isMe;
+
+  const _ReplyPreview({required this.reply, required this.isMe});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isMe
+            ? Colors.white.withValues(alpha: 0.25)
+            : Colors.black.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(
+            color: isMe ? Colors.white70 : const Color(0xFF0084FF),
+            width: 3,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            reply.senderUsername,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isMe ? Colors.white : const Color(0xFF0084FF),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            reply.content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: isMe ? Colors.white70 : Colors.black54,
+            ),
+          ),
         ],
       ),
     );
@@ -545,7 +790,6 @@ class _BottomInputBar extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Left icons
             if (!hasText) ...[
               _InputIcon(icon: Icons.add_circle_outline, onTap: () {}),
               _InputIcon(icon: Icons.camera_alt_outlined, onTap: () {}),
@@ -557,7 +801,6 @@ class _BottomInputBar extends StatelessWidget {
 
             const SizedBox(width: 4),
 
-            // Text field
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 120),
@@ -604,7 +847,6 @@ class _BottomInputBar extends StatelessWidget {
 
             const SizedBox(width: 6),
 
-            // Send / thumbs up
             GestureDetector(
               onTap: hasText ? onSend : () {},
               child: Icon(

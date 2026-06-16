@@ -88,6 +88,12 @@ class _WatchScreenState extends State<WatchScreen> {
         List.generate(posts.length, (index) => VideoControllerWrapper(null));
     key = List.generate(
         posts.length, (index) => GlobalKey(debugLabel: index.toString()));
+    scrollController.addListener(() {
+      headerScrollController.jumpTo(headerScrollController.offset +
+          scrollController.offset -
+          WatchScreen.offset);
+      WatchScreen.offset = scrollController.offset;
+    });
   }
 
   @override
@@ -102,18 +108,12 @@ class _WatchScreenState extends State<WatchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    scrollController.addListener(() {
-      headerScrollController.jumpTo(headerScrollController.offset +
-          scrollController.offset -
-          WatchScreen.offset);
-      WatchScreen.offset = scrollController.offset;
-    });
     return Scaffold(
       body: NestedScrollView(
         controller: headerScrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            toolbarHeight: 120,
+            toolbarHeight: kToolbarHeight + MediaQuery.of(context).size.height * 0.065,
             titleSpacing: 0,
             pinned: true,
             floating: true,
